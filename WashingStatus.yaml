@@ -9,6 +9,7 @@ blueprint:
     awetrix_ip:
       name: Awetrix 3.0 IP Address
       description: The IP address of the Awetrix 3.0 API.
+      default: 192.168.0.130
       selector:
         text:
     total_time:
@@ -16,8 +17,8 @@ blueprint:
       description: The total time (in minutes) over which the percentage is calculated.
       selector:
         number:
-          min: 1
-          max: 1440
+          min: 30
+          max: 300
           step: 1
           unit_of_measurement: minutes
     interval:
@@ -26,7 +27,7 @@ blueprint:
       selector:
         number:
           min: 1
-          max: 60
+          max: 20
           step: 1
           unit_of_measurement: minutes
 
@@ -54,9 +55,7 @@ action:
         condition: template
         value_template: "{{ repeat.index0 * interval * 60 >= total_time * 60 }}"
 
-rest_command:
-  awetrix_notification:
-    url: "http://{{ awetrix_ip }}/api"
+http://{{ awetrix_ip }}/api/notify"
     method: POST
     headers:
       Content-Type: "application/json"
