@@ -1,57 +1,65 @@
 blueprint:
-  name: Washing Machine Cycle Status
-  description: Send washing cycle status to Awetrix Lite based on power usage.
+  name: Awetrix Notification Timer
+  description: |
+    A blueprint to send notifications to Awetrix 3.0 API with a calculated percentage
+    based on the elapsed time, triggered by another automation. Allows configuration
+    of total time, time interval between messages, and the Awetrix 3.0 API IP.
   domain: automation
   input:
-    washing_machine_power:
-      name: Washing Machine Power Sensor
-      selector:
-        entity:
-          domain: sensor
     awetrix_ip:
-      name: Awetrix Lite IP
+      name: Awetrix 3.0 IP Address
+      description: The IP address of the Awetrix 3.0 API.
       selector:
         text:
-    message_interval:
-      name: Message Interval (minutes)
+    total_time:
+      name: Total Time
+      description: The total time (in seconds) over which the percentage is calculated.
       selector:
         number:
           min: 1
-          max: 120
-          unit_of_measurement: minutes
-          mode: box
+          max: 86400
           step: 1
-    cycle_duration:
-      name: Washing Cycle Duration (minutes)
+          unit_of_measurement: seconds
+    interval:
+      name: Notification Interval
+      description: Time between notifications sent to Awetrix (in seconds).
       selector:
         number:
           min: 1
-          max: 300
-          unit_of_measurement: minutes
-          mode: box
+          max: 3600
           step: 1
+          unit_of_measurement: seconds
 
 trigger:
-  - platform: time_pattern
-    minutes: "/1"
+  - platform: event
+    event_type: automation_trigger
+    event_data:
+      blueprint: "Awetrix Notification Timer"
 
 variables:
-  cycle_duration: "{{ input.cycle_duration }}"
-  awetrix_ip: "{{ input.awetrix_ip }}"
-
-condition:
-  - condition: template
-    value_template: >
-      {{ states(input.washing_machine_power) | float > 0 }}
-  - condition: template
-    value_template: >
-      {{ now().minute % (input.message_interval | int) == 0 }}
+  awetrix_ip: !input awetrix_ip
+  total_time: !input total_time
+  interval: !input interval
 
 action:
-  - service: rest_command.awetrix_notify
-    data:
-      url: "http://{{ input.awetrix_ip }}/api/notify"
-      payload: >
-        {
-          "text": "Washing Cycle {{ ((as_timestamp(now()) - as_timestamp(states(input.washing_machine_power).last_changed)) / 60 / input.cycle_duration * 100) | int }}% Completed"
-        }
+  - alias: "Send notifications to Awetrix API"
+    repeat:
+      sequence:
+        - service: rest_command.awetrix_notification
+          data:
+            message: "{{ (repeat.index0 / (total_time / interval) * 100) | round(2) }}%"
+        - delay:
+            seconds: "{{ interval }}"
+      until:
+        condition: template
+        value_template: "{{ repeat.index0 * interval >= total_time }}"
+
+rest_command:
+  awetrix_notification:
+    url: "http://{{ awetrix_ip }}/api"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    payload: '{"text": "{{ message }}"}'
+
+mode: single
