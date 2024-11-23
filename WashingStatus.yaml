@@ -39,7 +39,7 @@ variables:
 condition:
   - condition: template
     value_template: >
-      {{ states(input('washing_machine_power')) | float > 0 }}
+      {{ states('sensor.' + input.washing_machine_power) | float > 0 }}
 
 action:
   - service: rest_command.awetrix_notify
