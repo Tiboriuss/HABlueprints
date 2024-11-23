@@ -19,6 +19,7 @@ blueprint:
           min: 1
           max: 120
           unit_of_measurement: minutes
+
     cycle_duration:
       name: Washing Cycle Duration (minutes)
       selector:
