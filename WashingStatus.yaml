@@ -30,7 +30,7 @@ blueprint:
 
 trigger:
   - platform: time_pattern
-    minutes: "/{{ !input message_interval }}"
+    minutes: "/{{ input.message_interval }}"
 
 variables:
   cycle_duration: !input cycle_duration
@@ -39,7 +39,7 @@ variables:
 condition:
   - condition: template
     value_template: >
-      {{ states(!input 'washing_machine_power') | float > 0 }}
+      {{ states(input('washing_machine_power')) | float > 0 }}
 
 action:
   - service: rest_command.awetrix_notify
@@ -47,5 +47,5 @@ action:
       url: "http://{{ awetrix_ip }}/api/notify"
       payload: >
         {
-          "text": "Washing Cycle {{ ((as_timestamp(now()) - as_timestamp(states(!input 'washing_machine_power').last_changed)) / 60 / cycle_duration * 100) | int }}% Completed"
+          "text": "Washing Cycle {{ ((as_timestamp(now()) - as_timestamp(states(input('washing_machine_power')).last_changed)) / 60 / cycle_duration * 100) | int }}% Completed"
         }
