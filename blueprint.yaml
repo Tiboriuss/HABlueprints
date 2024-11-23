@@ -1,0 +1,50 @@
+blueprint:
+  name: Washing Machine Cycle Status
+  description: Send washing cycle status to Awetrix Lite based on power usage.
+  domain: automation
+  input:
+    washing_machine_power:
+      name: Washing Machine Power Sensor
+      selector:
+        entity:
+          domain: sensor
+    awetrix_ip:
+      name: Awetrix Lite IP
+      selector:
+        text:
+    message_interval:
+      name: Message Interval (minutes)
+      selector:
+        number:
+          min: 1
+          max: 120
+          unit_of_measurement: minutes
+    cycle_duration:
+      name: Washing Cycle Duration (minutes)
+      selector:
+        number:
+          min: 1
+          max: 300
+          unit_of_measurement: minutes
+
+trigger:
+  - platform: time_pattern
+    minutes: "/{{ !input message_interval }}"
+
+variables:
+  cycle_duration: !input cycle_duration
+  awetrix_ip: !input awetrix_ip
+
+condition:
+  - condition: template
+    value_template: >
+      {{ states('!input washing_machine_power') | float > 0 }}
+
+action:
+  - service: rest_command.awetrix_notify
+    data:
+      url: "http://{{ awetrix_ip }}/api/notify"
+      payload: >
+        {
+          "text": "Washing Cycle {{ (as_timestamp(now()) - as_timestamp(states('!input washing_machine_power').last_changed)) / 60 / cycle_duration * 100 | int }}% Completed"
+        }
