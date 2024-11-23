@@ -13,22 +13,22 @@ blueprint:
         text:
     total_time:
       name: Total Time
-      description: The total time (in seconds) over which the percentage is calculated.
+      description: The total time (in minutes) over which the percentage is calculated.
       selector:
         number:
           min: 1
-          max: 86400
+          max: 1440
           step: 1
-          unit_of_measurement: seconds
+          unit_of_measurement: minutes
     interval:
       name: Notification Interval
-      description: Time between notifications sent to Awetrix (in seconds).
+      description: Time between notifications sent to Awetrix (in minutes).
       selector:
         number:
           min: 1
-          max: 3600
+          max: 60
           step: 1
-          unit_of_measurement: seconds
+          unit_of_measurement: minutes
 
 trigger:
   - platform: event
@@ -47,12 +47,12 @@ action:
       sequence:
         - service: rest_command.awetrix_notification
           data:
-            message: "{{ (repeat.index0 / (total_time / interval) * 100) | round(2) }}%"
+            message: "{{ (repeat.index0 / (total_time * 60 / (interval * 60)) * 100) | round(2) }}%"
         - delay:
-            seconds: "{{ interval }}"
+            minutes: "{{ interval }}"
       until:
         condition: template
-        value_template: "{{ repeat.index0 * interval >= total_time }}"
+        value_template: "{{ repeat.index0 * interval * 60 >= total_time * 60 }}"
 
 rest_command:
   awetrix_notification:
