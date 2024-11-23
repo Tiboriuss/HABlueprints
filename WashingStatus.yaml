@@ -33,19 +33,19 @@ trigger:
     minutes: "/{{ input.message_interval }}"
 
 variables:
-  cycle_duration: !input cycle_duration
-  awetrix_ip: !input awetrix_ip
+  cycle_duration: "{{ input.cycle_duration }}"
+  awetrix_ip: "{{ input.awetrix_ip }}"
 
 condition:
   - condition: template
     value_template: >
-      {{ states('sensor.' + input.washing_machine_power) | float > 0 }}
+      {{ states(input.washing_machine_power) | float > 0 }}
 
 action:
   - service: rest_command.awetrix_notify
     data:
-      url: "http://{{ awetrix_ip }}/api/notify"
+      url: "http://{{ input.awetrix_ip }}/api/notify"
       payload: >
         {
-          "text": "Washing Cycle {{ ((as_timestamp(now()) - as_timestamp(states(input('washing_machine_power')).last_changed)) / 60 / cycle_duration * 100) | int }}% Completed"
+          "text": "Washing Cycle {{ ((as_timestamp(now()) - as_timestamp(states(input.washing_machine_power).last_changed)) / 60 / input.cycle_duration * 100) | int }}% Completed"
         }
