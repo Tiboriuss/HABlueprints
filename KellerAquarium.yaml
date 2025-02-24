@@ -1,0 +1,65 @@
+blueprint:
+  name: Temperature Based Switch Control
+  description: Controls a switch based on temperature thresholds. Turns on below lower threshold and off above higher threshold.
+  domain: automation
+  input:
+    temperature_sensor:
+      name: Temperature Sensor
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    target_switch:
+      name: Switch to Control
+      selector:
+        entity:
+          domain: switch
+    lower_temp:
+      name: Lower Temperature Threshold
+      description: Switch turns ON when temperature drops to or below this value
+      default: 20.0
+      selector:
+        number:
+          min: -50
+          max: 100
+          step: 0.1
+          unit_of_measurement: °C
+    upper_temp:
+      name: Upper Temperature Threshold
+      description: Switch turns OFF when temperature rises to or above this value
+      default: 22.0
+      selector:
+        number:
+          min: -50
+          max: 100
+          step: 0.1
+          unit_of_measurement: °C
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input temperature_sensor
+    below: !input lower_temp
+  - platform: numeric_state
+    entity_id: !input temperature_sensor
+    above: !input upper_temp
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: numeric_state
+            entity_id: !input temperature_sensor
+            below: !input lower_temp
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input target_switch
+      - conditions:
+          - condition: numeric_state
+            entity_id: !input temperature_sensor
+            above: !input upper_temp
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input target_switch
