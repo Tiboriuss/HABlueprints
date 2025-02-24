@@ -1,6 +1,6 @@
 blueprint:
-  name: Temperature Based Switch Control
-  description: Controls a switch based on temperature thresholds. Turns on below lower threshold and off above higher threshold.
+  name: Keller Aquarium Controller
+  description: Ein Blueprint um das Keller Aquarium zu automatisieren.
   domain: automation
   input:
     temperature_sensor:
