@@ -4,19 +4,19 @@ blueprint:
   domain: automation
   input:
     temperature_sensor:
-      name: Temperature Sensor
+      name: Temperatursensor
       selector:
         entity:
           domain: sensor
           device_class: temperature
     target_switch:
-      name: Switch to Control
+      name: Zu steuernder Schalter
       selector:
         entity:
           domain: switch
     lower_temp:
-      name: Lower Temperature Threshold
-      description: Switch turns ON when temperature drops to or below this value
+      name: Untere Temperaturschwelle
+      description: Schalter wird eingeschaltet, wenn die Temperatur auf oder unter diesen Wert fällt
       default: 20.0
       selector:
         number:
@@ -25,8 +25,8 @@ blueprint:
           step: 0.1
           unit_of_measurement: °C
     upper_temp:
-      name: Upper Temperature Threshold
-      description: Switch turns OFF when temperature rises to or above this value
+      name: Obere Temperaturschwelle
+      description: Schalter wird ausgeschaltet, wenn die Temperatur auf oder über diesen Wert steigt
       default: 22.0
       selector:
         number:
