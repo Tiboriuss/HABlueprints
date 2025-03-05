@@ -1,8 +1,8 @@
 blueprint:
-  name: Flur Doppel-Beleuchtungsautomatisierung
+  name: Flur Doppel-Beleuchtungsautomatisierung mit Sensor-Steuerung
   description: >
-    Steuert zwei Flurlichter (Tag und Nacht) basierend auf einem Anwesenheitssensor und Zeitbedingungen.
-    Ein Licht wird tagsüber verwendet und ein anderes nachts. v1
+    Steuert zwei Flurlichter (Tag und Nacht) basierend auf einem Anwesenheitssensor, einem Kontrollsensor und Zeitbedingungen.
+    Ein Licht wird tagsüber verwendet und ein anderes nachts. Der Zustand des Kontrollsensors bestimmt, ob die Lichter ein- oder ausgeschaltet werden. v2
   domain: automation
   input:
     presence_sensor:
@@ -15,6 +15,24 @@ blueprint:
       name: Anwesenheitsstatus
       description: Der Status des Sensors, der Anwesenheit anzeigt (normalerweise "on")
       default: "on"
+      selector:
+        text:
+    control_sensor:
+      name: Kontrollsensor
+      description: Der Sensor, dessen Zustand bestimmt, ob die Lichter ein- oder ausgeschaltet werden
+      selector:
+        entity:
+          domain: sensor
+    control_on_state:
+      name: Einschalt-Zustand
+      description: Der Zustand des Kontrollsensors, bei dem die Lichter eingeschaltet werden sollen
+      default: "on"
+      selector:
+        text:
+    control_off_state:
+      name: Ausschalt-Zustand
+      description: Der Zustand des Kontrollsensors, bei dem die Lichter ausgeschaltet werden sollen
+      default: "off"
       selector:
         text:
     day_light:
@@ -43,35 +61,24 @@ blueprint:
       default: "22:00:00"
       selector:
         time:
-    light_on_duration:
-      name: Beleuchtungsdauer
-      description: Wie lange das Licht eingeschaltet bleibt, nachdem keine Anwesenheit mehr erkannt wird (in Sekunden)
-      default: 120
-      selector:
-        number:
-          min: 0
-          max: 3600
-          unit_of_measurement: Sekunden
 
 # Definiere die Automatisierungsauslöser, Bedingungen und Aktionen
 trigger:
   - platform: state
     entity_id: !input presence_sensor
-    to: !input presence_state
   - platform: state
-    entity_id: !input presence_sensor
-    from: !input presence_state
-    for:
-      seconds: !input light_on_duration
+    entity_id: !input control_sensor
 
 condition: []
 
 action:
   - choose:
-      # Wenn Anwesenheit erkannt wird
+      # Wenn der Kontrollsensor auf "Ein" steht und Anwesenheit erkannt wird
       - conditions:
           - condition: template
-            value_template: "{{ trigger.to_state.state == states(presence_sensor) }}"
+            value_template: "{{ states(trigger.entity_id) == input.presence_state or states(input.presence_sensor) == input.presence_state }}"
+          - condition: template
+            value_template: "{{ states(input.control_sensor) == input.control_on_state }}"
           - condition: or
             conditions:
               # Tageszeitbedingungen
@@ -80,8 +87,6 @@ action:
                   - condition: time
                     after: !input day_start_time
                     before: !input day_end_time
-                  - condition: template
-                    value_template: "{{ states(trigger.entity_id) == input.presence_state }}"
               # Nachtzeitbedingungen
               - condition: and
                 conditions:
@@ -91,8 +96,6 @@ action:
                         after: !input day_end_time
                       - condition: time
                         before: !input day_start_time
-                  - condition: template
-                    value_template: "{{ states(trigger.entity_id) == input.presence_state }}"
         sequence:
           - choose:
               # Tageslicht während der Tageszeit einschalten
@@ -127,12 +130,10 @@ action:
                       - service: switch.turn_on
                         target:
                           entity_id: !input night_light
-      # Wenn keine Anwesenheit mehr erkannt wird
+      # Wenn der Kontrollsensor auf "Aus" steht
       - conditions:
           - condition: template
-            value_template: "{{ trigger.from_state.state == states(presence_sensor) }}"
-          - condition: template
-            value_template: "{{ states(trigger.entity_id) != input.presence_state }}"
+            value_template: "{{ states(input.control_sensor) == input.control_off_state }}"
         sequence:
           - choose:
               # Tageslicht während der Tageszeit ausschalten
