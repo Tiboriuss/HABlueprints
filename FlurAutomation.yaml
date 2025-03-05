@@ -1,57 +1,59 @@
 blueprint:
-  name: Flur Doppel-Beleuchtungsautomatisierung mit Präsenzsteuerung
+  name: Dual Light Presence Controller
   description: >
-    Steuert zwei Flurlichter (Tag und Nacht) basierend auf einem Anwesenheitssensor und Zeitbedingungen.
-    Ein Licht wird tagsüber verwendet und ein anderes nachts. Die Lichter schalten sich ein, wenn Anwesenheit 
-    erkannt wird, und aus, wenn keine Anwesenheit mehr erkannt wird. v4
+    Controls two lights (day and night) based on a presence sensor and time conditions.
+    One light is used during the day and another during the night. The lights turn on when 
+    presence is detected and off when presence is no longer detected. Supports both lights and relays/switches. v1
   domain: automation
   input:
     presence_sensor:
-      name: Anwesenheitssensor
-      description: Der Binärsensor, der Anwesenheit im Flur erkennt
+      name: Presence Sensor
+      description: The binary sensor that detects presence
       selector:
         entity:
           domain: binary_sensor
     presence_on_state:
-      name: Anwesenheitsstatus (Ein)
-      description: Der Status des Sensors, der Anwesenheit anzeigt (normalerweise "on")
+      name: Presence State (On)
+      description: The state of the sensor that indicates presence (usually "on")
       default: "on"
       selector:
         text:
     presence_off_state:
-      name: Anwesenheitsstatus (Aus)
-      description: Der Status des Sensors, der keine Anwesenheit anzeigt (normalerweise "off")
+      name: Presence State (Off)
+      description: The state of the sensor that indicates no presence (usually "off")
       default: "off"
       selector:
         text:
     day_light:
-      name: Tageslicht
-      description: Das Licht, das tagsüber verwendet wird
+      name: Day Light/Relay
+      description: The light or switch that is used during the day
       selector:
         entity:
-          domain: light
+          domain:
+            - light
+            - switch
     night_light:
-      name: Nachtlicht
-      description: Das Licht oder der Schalter, der nachts verwendet wird
+      name: Night Light/Relay
+      description: The light or switch that is used during the night
       selector:
         entity:
           domain:
             - light
             - switch
     day_start_time:
-      name: Tagesbeginn
-      description: Zeitpunkt, zu dem die Tagesperiode beginnt
+      name: Day Start Time
+      description: Time when the day period begins
       default: "07:00:00"
       selector:
         time:
     day_end_time:
-      name: Tagesende
-      description: Zeitpunkt, zu dem die Tagesperiode endet
+      name: Day End Time
+      description: Time when the day period ends
       default: "22:00:00"
       selector:
         time:
 
-# Definiere die Automatisierungsauslöser, Bedingungen und Aktionen
+# Define automation triggers, conditions, and actions
 trigger:
   - platform: state
     entity_id: !input presence_sensor
@@ -60,21 +62,31 @@ condition: []
 
 action:
   - choose:
-      # Wenn Anwesenheit erkannt wird (Sensor = ON)
+      # When presence is detected (Sensor = ON)
       - conditions:
           - condition: template
             value_template: "{{ states(trigger.entity_id) == input.presence_on_state }}"
         sequence:
           - choose:
-              # Tageslicht während der Tageszeit einschalten
+              # Turn on day light during day time
               - conditions:
                   - condition: time
                     after: !input day_start_time
                     before: !input day_end_time
                 sequence:
-                  - service: light.turn_on
-                    entity_id: !input day_light
-              # Nachtlicht während der Nachtzeit einschalten
+                  - choose:
+                      # If day light is a light entity
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ 'light.' in input.day_light }}"
+                        sequence:
+                          - service: light.turn_on
+                            entity_id: !input day_light
+                    default:
+                      # If day light is a switch entity
+                      - service: switch.turn_on
+                        entity_id: !input day_light
+              # Turn on night light during night time
               - conditions:
                   - condition: or
                     conditions:
@@ -84,7 +96,7 @@ action:
                         before: !input day_start_time
                 sequence:
                   - choose:
-                      # Wenn Nachtlicht eine Lichtentität ist
+                      # If night light is a light entity
                       - conditions:
                           - condition: template
                             value_template: "{{ 'light.' in input.night_light }}"
@@ -92,24 +104,34 @@ action:
                           - service: light.turn_on
                             entity_id: !input night_light
                     default:
-                      # Wenn Nachtlicht eine Schaltentität ist
+                      # If night light is a switch entity
                       - service: switch.turn_on
                         entity_id: !input night_light
-      # Wenn keine Anwesenheit mehr erkannt wird (Sensor = OFF)
+      # When presence is no longer detected (Sensor = OFF)
       - conditions:
           - condition: template
             value_template: "{{ states(trigger.entity_id) == input.presence_off_state }}"
         sequence:
           - choose:
-              # Tageslicht während der Tageszeit ausschalten
+              # Turn off day light during day time
               - conditions:
                   - condition: time
                     after: !input day_start_time
                     before: !input day_end_time
                 sequence:
-                  - service: light.turn_off
-                    entity_id: !input day_light
-              # Nachtlicht während der Nachtzeit ausschalten
+                  - choose:
+                      # If day light is a light entity
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ 'light.' in input.day_light }}"
+                        sequence:
+                          - service: light.turn_off
+                            entity_id: !input day_light
+                    default:
+                      # If day light is a switch entity
+                      - service: switch.turn_off
+                        entity_id: !input day_light
+              # Turn off night light during night time
               - conditions:
                   - condition: or
                     conditions:
@@ -119,7 +141,7 @@ action:
                         before: !input day_start_time
                 sequence:
                   - choose:
-                      # Wenn Nachtlicht eine Lichtentität ist
+                      # If night light is a light entity
                       - conditions:
                           - condition: template
                             value_template: "{{ 'light.' in input.night_light }}"
@@ -127,6 +149,6 @@ action:
                           - service: light.turn_off
                             entity_id: !input night_light
                     default:
-                      # Wenn Nachtlicht eine Schaltentität ist
+                      # If night light is a switch entity
                       - service: switch.turn_off
                         entity_id: !input night_light
