@@ -1,0 +1,84 @@
+blueprint:
+  name: Binary Sensor to Light/Relay Controller
+  description: Turns on a light or relay when a binary sensor changes state
+  domain: automation
+  input:
+    binary_sensor:
+      name: Binary Sensor
+      description: The binary sensor that will trigger the automation
+      selector:
+        entity:
+          domain: binary_sensor
+    target_device:
+      name: Target Light or Relay
+      description: The light or relay to control
+      selector:
+        entity:
+          domain:
+            - light
+            - switch
+    turn_on_state:
+      name: Turn On When
+      description: The state of the binary sensor that should trigger turning on the device
+      default: "on"
+      selector:
+        select:
+          options:
+            - "on"
+            - "off"
+    auto_off:
+      name: Auto Turn Off
+      description: Automatically turn off the device after a period of time
+      default: false
+      selector:
+        boolean: {}
+    auto_off_delay:
+      name: Auto Turn Off Delay
+      description: How long to wait before turning off the device (in minutes)
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 120
+          unit_of_measurement: min
+          mode: slider
+
+trigger:
+  - platform: state
+    entity_id: !input binary_sensor
+    to: !input turn_on_state
+
+condition: []
+
+action:
+  - service: >-
+      {% if is_state('!input target_device', 'on') %}
+        {% if device_attr('!input target_device', 'domain') == 'light' %}
+          light.turn_off
+        {% else %}
+          switch.turn_off
+        {% endif %}
+      {% else %}
+        {% if device_attr('!input target_device', 'domain') == 'light' %}
+          light.turn_on
+        {% else %}
+          switch.turn_on
+        {% endif %}
+      {% endif %}
+    target:
+      entity_id: !input target_device
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ is_state('!input target_device', 'on') and (input.auto_off == true) }}"
+        sequence:
+          - delay:
+              minutes: !input auto_off_delay
+          - service: >-
+              {% if device_attr('!input target_device', 'domain') == 'light' %}
+                light.turn_off
+              {% else %}
+                switch.turn_off
+              {% endif %}
+            target:
+              entity_id: !input target_device
