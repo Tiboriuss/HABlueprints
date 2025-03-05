@@ -2,7 +2,7 @@ blueprint:
   name: Flur Doppel-Beleuchtungsautomatisierung
   description: >
     Steuert zwei Flurlichter (Tag und Nacht) basierend auf einem Anwesenheitssensor und Zeitbedingungen.
-    Ein Licht wird tagsüber verwendet und ein anderes nachts.
+    Ein Licht wird tagsüber verwendet und ein anderes nachts. v1
   domain: automation
   input:
     presence_sensor:
