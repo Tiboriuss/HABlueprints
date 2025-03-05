@@ -3,7 +3,7 @@ blueprint:
   description: >
     Steuert zwei Flurlichter (Tag und Nacht) basierend auf einem Anwesenheitssensor und Zeitbedingungen.
     Ein Licht wird tagsüber verwendet und ein anderes nachts. Die Lichter schalten sich ein, wenn Anwesenheit 
-    erkannt wird, und aus, wenn keine Anwesenheit mehr erkannt wird. v3
+    erkannt wird, und aus, wenn keine Anwesenheit mehr erkannt wird. v4
   domain: automation
   input:
     presence_sensor:
@@ -73,8 +73,7 @@ action:
                     before: !input day_end_time
                 sequence:
                   - service: light.turn_on
-                    target:
-                      entity_id: !input day_light
+                    entity_id: !input day_light
               # Nachtlicht während der Nachtzeit einschalten
               - conditions:
                   - condition: or
@@ -91,13 +90,11 @@ action:
                             value_template: "{{ 'light.' in input.night_light }}"
                         sequence:
                           - service: light.turn_on
-                            target:
-                              entity_id: !input night_light
+                            entity_id: !input night_light
                     default:
                       # Wenn Nachtlicht eine Schaltentität ist
                       - service: switch.turn_on
-                        target:
-                          entity_id: !input night_light
+                        entity_id: !input night_light
       # Wenn keine Anwesenheit mehr erkannt wird (Sensor = OFF)
       - conditions:
           - condition: template
@@ -111,8 +108,7 @@ action:
                     before: !input day_end_time
                 sequence:
                   - service: light.turn_off
-                    target:
-                      entity_id: !input day_light
+                    entity_id: !input day_light
               # Nachtlicht während der Nachtzeit ausschalten
               - conditions:
                   - condition: or
@@ -129,10 +125,8 @@ action:
                             value_template: "{{ 'light.' in input.night_light }}"
                         sequence:
                           - service: light.turn_off
-                            target:
-                              entity_id: !input night_light
+                            entity_id: !input night_light
                     default:
                       # Wenn Nachtlicht eine Schaltentität ist
                       - service: switch.turn_off
-                        target:
-                          entity_id: !input night_light
+                        entity_id: !input night_light
