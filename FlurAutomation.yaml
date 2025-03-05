@@ -7,13 +7,14 @@ blueprint:
   input:
     presence_sensor:
       name: Anwesenheitssensor
-      description: Der Sensor, der Anwesenheit im Flur erkennt
+      description: Der Binärsensor, der Anwesenheit im Flur erkennt
       selector:
         entity:
-          domain: sensor
+          domain: binary_sensor
     presence_state:
       name: Anwesenheitsstatus
-      description: Der Status des Sensors, der Anwesenheit anzeigt
+      description: Der Status des Sensors, der Anwesenheit anzeigt (normalerweise "on")
+      default: "on"
       selector:
         text:
     day_light:
