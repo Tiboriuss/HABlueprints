@@ -1,70 +1,90 @@
 blueprint:
-  name: Binary Sensor to Light/Relay Controller
-  description: Turns on a light or relay when a binary sensor changes state v1
+  name: Day/Night Sensor Controlled Lighting
+  description: >-
+    Automatically toggles between day and night lighting based on a binary sensor and specified time intervals. V1
   domain: automation
+
   input:
-    binary_sensor:
-      name: Binary Sensor
-      description: The binary sensor that will trigger the automation
-      selector:
-        entity:
-          domain: binary_sensor
-    target_device:
-      name: Target Light or Relay
-      description: The light or relay to control
+    day_light:
+      name: Daytime Light
+      description: "The main (bright) light entity to switch on during daytime."
       selector:
         entity:
           domain:
             - light
             - switch
-    turn_on_state:
-      name: Turn On When
-      description: The state of the binary sensor that should trigger turning on the device
-      default: "on"
+
+    night_light:
+      name: Nighttime Light
+      description: "The softer (night) light entity to switch on during nighttime."
       selector:
-        select:
-          options:
-            - "on"
-            - "off"
+        entity:
+          domain:
+            - light
+            - switch
+
+    binary_sensor:
+      name: Motion/Presence Sensor
+      description: "The binary sensor that triggers the lighting."
+      selector:
+        entity:
+          domain: binary_sensor
+
+    day_start:
+      name: Daytime Start
+      description: "Time when daytime lighting starts."
+      selector:
+        time:
+
+    night_start:
+      name: Nighttime Start
+      description: "Time when nighttime lighting starts."
+      selector:
+        time:
 
 trigger:
   - platform: state
     entity_id: !input binary_sensor
-    to: !input turn_on_state
-  - platform: state
-    entity_id: !input binary_sensor
-    to: >-
-      {% if input.turn_on_state == 'on' %}
-        off
-      {% else %}
-        on
-      {% endif %}
+
+variables:
+  day_start: !input day_start
+  night_start: !input night_start
 
 condition: []
 
 action:
   - choose:
       - conditions:
-          - condition: template
-            value_template: "{{ trigger.to_state.state == input.turn_on_state }}"
+          - condition: time
+            after: !input day_start
+            before: !input night_start
+          - condition: state
+            entity_id: !input binary_sensor
+            state: 'on'
         sequence:
-          - service: >-
-              {% if device_attr('!input target_device', 'domain') == 'light' %}
-                light.turn_on
-              {% else %}
-                switch.turn_on
-              {% endif %}
+          - service: homeassistant.turn_on
             target:
-              entity_id: !input target_device
+              entity_id: !input day_light
+
       - conditions:
-          - condition: template
-            value_template: "{{ trigger.to_state.state != input.turn_on_state }}"
+          - condition: time
+            after: !input night_start
+            before: !input day_start
+          - condition: state
+            entity_id: !input binary_sensor
+            state: 'on'
         sequence:
-          - service: >-
-              {% if device_attr('!input target_device', 'domain') == 'light' %}
-                light.turn_off
-              {% else %}
-                switch.turn_off
-              {% endif %}
+          - service: homeassistant.turn_on
             target:
-              entity_id: !input target_device
+              entity_id: !input night_light
+
+      - conditions:
+          - condition: state
+            entity_id: !input binary_sensor
+            state: 'off'
+        sequence:
+          - service: homeassistant.turn_off
+            target:
+              entity_id:
+                - !input day_light
+                - !input night_light
