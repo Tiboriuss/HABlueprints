@@ -1,0 +1,67 @@
+blueprint:
+  name: Türkontakt Benachrichtigung (öffnen/schließen)
+  description: >
+    Sendet eine Benachrichtigung, wenn ein Tür-/Fensterkontakt geöffnet oder
+    geschlossen wird. Nachricht verwendet den konfigurierten Namen.
+  domain: automation
+  input:
+    door_sensor:
+      name: Tür-/Fensterkontakt (Reed)
+      description: Wähle den Zigbee Tür-/Fensterkontakt aus.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class:
+            - door
+            - opening
+            - window
+
+    notify_device:
+      name: Gerät für Benachrichtigung
+      description: Mobilgerät, das die Push-Benachrichtigung erhalten soll.
+      selector:
+        device:
+          integration: mobile_app
+
+    name:
+      name: Name für die Benachrichtigung
+      description: Dieser Name ersetzt %NAME% in der Nachricht.
+      default: Tür
+      selector:
+        text: {}
+
+mode: restart
+
+variables:
+  notif_name: !input name
+
+trigger:
+  - platform: state
+    entity_id: !input door_sensor
+    from: "off"
+    to: "on"
+    id: opened
+  - platform: state
+    entity_id: !input door_sensor
+    from: "on"
+    to: "off"
+    id: closed
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: opened
+        sequence:
+          - device_id: !input notify_device
+            domain: mobile_app
+            type: notify
+            message: "{{ notif_name }} wurde geöffnet"
+      - conditions:
+          - condition: trigger
+            id: closed
+        sequence:
+          - device_id: !input notify_device
+            domain: mobile_app
+            type: notify
+            message: "{{ notif_name }} wurde geschlossen"
