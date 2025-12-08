@@ -19,12 +19,12 @@ blueprint:
       selector:
         text: {}
 
-    ntfy_target:
-      name: ntfy Ziel
-      description: Wähle das ntfy Notify-Entity (Topic).
+    ntfy_device:
+      name: ntfy Gerät
+      description: Wähle das ntfy Gerät/Topic.
       selector:
-        entity:
-          domain: notify
+        device:
+          integration: ntfy
 
 mode: restart
 
@@ -51,8 +51,9 @@ action:
         sequence:
           - service: ntfy.publish
             target:
-              entity_id: !input ntfy_target
+              device_id: !input ntfy_device
             data:
+              title: "{{ notif_name }}"
               message: "{{ notif_name }} wurde geöffnet"
       - conditions:
           - condition: trigger
@@ -60,6 +61,7 @@ action:
         sequence:
           - service: ntfy.publish
             target:
-              entity_id: !input ntfy_target
+              device_id: !input ntfy_device
             data:
+              title: "{{ notif_name }}"
               message: "{{ notif_name }} wurde geschlossen"
