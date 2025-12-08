@@ -19,17 +19,17 @@ blueprint:
       selector:
         text: {}
 
-    ntfy_topic:
-      name: ntfy Topic
-      description: Topic, an das ntfy.publish senden soll.
+    ntfy_target:
+      name: ntfy Ziel
+      description: Wähle das ntfy Notify-Entity (Topic).
       selector:
-        text: {}
+        entity:
+          domain: notify
 
 mode: restart
 
 variables:
   notif_name: !input name
-  ntfy_topic: !input ntfy_topic
 
 trigger:
   - platform: state
@@ -50,14 +50,16 @@ action:
             id: opened
         sequence:
           - service: ntfy.publish
+            target:
+              entity_id: !input ntfy_target
             data:
-              topic: "{{ ntfy_topic }}"
               message: "{{ notif_name }} wurde geöffnet"
       - conditions:
           - condition: trigger
             id: closed
         sequence:
           - service: ntfy.publish
+            target:
+              entity_id: !input ntfy_target
             data:
-              topic: "{{ ntfy_topic }}"
               message: "{{ notif_name }} wurde geschlossen"
