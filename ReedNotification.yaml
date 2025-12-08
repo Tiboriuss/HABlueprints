@@ -1,8 +1,8 @@
 blueprint:
-  name: Türkontakt Benachrichtigung (öffnen/schließen)
+  name: Türkontakt → ntfy Benachrichtigung
   description: >
-    Sendet eine Benachrichtigung, wenn ein Tür-/Fensterkontakt geöffnet oder
-    geschlossen wird. Nachricht verwendet den konfigurierten Namen.
+    Sendet eine ntfy-Benachrichtigung, wenn ein Tür-/Fensterkontakt geöffnet
+    oder geschlossen wird. Nachricht verwendet den konfigurierten Namen.
   domain: automation
   input:
     door_sensor:
@@ -11,17 +11,6 @@ blueprint:
       selector:
         entity:
           domain: binary_sensor
-          device_class:
-            - door
-            - opening
-            - window
-
-    notify_device:
-      name: Gerät für Benachrichtigung
-      description: Mobilgerät, das die Push-Benachrichtigung erhalten soll.
-      selector:
-        device:
-          integration: mobile_app
 
     name:
       name: Name für die Benachrichtigung
@@ -30,10 +19,17 @@ blueprint:
       selector:
         text: {}
 
+    ntfy_topic:
+      name: ntfy Topic
+      description: Topic, an das ntfy.publish senden soll.
+      selector:
+        text: {}
+
 mode: restart
 
 variables:
   notif_name: !input name
+  ntfy_topic: !input ntfy_topic
 
 trigger:
   - platform: state
@@ -53,15 +49,15 @@ action:
           - condition: trigger
             id: opened
         sequence:
-          - device_id: !input notify_device
-            domain: mobile_app
-            type: notify
-            message: "{{ notif_name }} wurde geöffnet"
+          - service: ntfy.publish
+            data:
+              topic: "{{ ntfy_topic }}"
+              message: "{{ notif_name }} wurde geöffnet"
       - conditions:
           - condition: trigger
             id: closed
         sequence:
-          - device_id: !input notify_device
-            domain: mobile_app
-            type: notify
-            message: "{{ notif_name }} wurde geschlossen"
+          - service: ntfy.publish
+            data:
+              topic: "{{ ntfy_topic }}"
+              message: "{{ notif_name }} wurde geschlossen"
