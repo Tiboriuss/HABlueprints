@@ -1,0 +1,94 @@
+blueprint:
+  name: Klingel → Benachrichtigung (ntfy + Telegram)
+  description: >
+    Sendet eine Benachrichtigung wenn die Klingel betätigt wird.
+    ntfy und Telegram sind beide optional und unabhängig voneinander aktivierbar.
+  domain: automation
+  input:
+    klingel_sensor:
+      name: Klingel-Sensor
+      description: Entität die beim Klingeln ausgelöst wird (z.B. binary_sensor).
+      selector:
+        entity:
+          domain: binary_sensor
+
+    message_text:
+      name: Nachrichtentext
+      description: Text der bei der Benachrichtigung gesendet wird.
+      default: Es hat geklingelt!
+      selector:
+        text: {}
+
+    ntfy_enabled:
+      name: ntfy aktivieren
+      description: Benachrichtigung über ntfy senden.
+      default: true
+      selector:
+        boolean: {}
+
+    ntfy_device:
+      name: ntfy Gerät
+      description: Wähle das ntfy Gerät/Topic (nur relevant wenn ntfy aktiviert).
+      default: ""
+      selector:
+        device:
+          integration: ntfy
+
+    ntfy_title:
+      name: ntfy Titel
+      description: Titel der ntfy-Benachrichtigung.
+      default: Klingel
+      selector:
+        text: {}
+
+    telegram_enabled:
+      name: Telegram aktivieren
+      description: Benachrichtigung über Telegram senden.
+      default: false
+      selector:
+        boolean: {}
+
+    telegram_entity:
+      name: Telegram Notify-Entität
+      description: Wähle die Telegram-Notify-Entität (nur relevant wenn Telegram aktiviert).
+      default: ""
+      selector:
+        entity:
+          domain: notify
+
+mode: single
+max_exceeded: silent
+
+variables:
+  use_ntfy: !input ntfy_enabled
+  use_telegram: !input telegram_enabled
+  telegram_target: !input telegram_entity
+  msg_text: !input message_text
+  ntfy_title_text: !input ntfy_title
+
+trigger:
+  - platform: state
+    entity_id: !input klingel_sensor
+    from: "off"
+    to: "on"
+
+action:
+  - if:
+      - condition: template
+        value_template: "{{ use_ntfy }}"
+    then:
+      - service: ntfy.publish
+        target:
+          device_id: !input ntfy_device
+        data:
+          title: "{{ ntfy_title_text }}"
+          message: "{{ msg_text }}"
+  - if:
+      - condition: template
+        value_template: "{{ use_telegram and telegram_target != '' }}"
+    then:
+      - service: notify.send_message
+        target:
+          entity_id: "{{ telegram_target }}"
+        data:
+          message: "{{ msg_text }}"
