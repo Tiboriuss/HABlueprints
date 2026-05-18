@@ -1,8 +1,9 @@
 blueprint:
-  name: Türkontakt → ntfy Benachrichtigung
+  name: Türkontakt → ntfy + Telegram Benachrichtigung
   description: >
-    Sendet eine ntfy-Benachrichtigung, wenn ein Tür-/Fensterkontakt geöffnet
-    oder geschlossen wird. Nachricht verwendet den konfigurierten Namen.
+    Sendet eine ntfy-Benachrichtigung (und optional Telegram), wenn ein
+    Tür-/Fensterkontakt geöffnet oder geschlossen wird.
+    Nachricht verwendet den konfigurierten Namen.
   domain: automation
   input:
     door_sensor:
@@ -26,10 +27,27 @@ blueprint:
         device:
           integration: ntfy
 
+    telegram_enabled:
+      name: Telegram aktivieren
+      description: Zusätzlich eine Benachrichtigung über Telegram senden.
+      default: false
+      selector:
+        boolean: {}
+
+    telegram_entity:
+      name: Telegram Notify-Entität
+      description: >
+        Wähle die Telegram-Notify-Entität aus (nur relevant wenn Telegram aktiviert).
+      selector:
+        entity:
+          domain: notify
+
 mode: restart
 
 variables:
   notif_name: !input name
+  use_telegram: !input telegram_enabled
+  telegram_target: !input telegram_entity
 
 trigger:
   - platform: state
@@ -55,6 +73,16 @@ action:
             data:
               title: "{{ notif_name }}"
               message: "{{ notif_name }} wurde geöffnet"
+          - if:
+              - condition: template
+                value_template: "{{ use_telegram }}"
+            then:
+              - service: notify.send_message
+                target:
+                  entity_id: "{{ telegram_target }}"
+                data:
+                  title: "{{ notif_name }}"
+                  message: "{{ notif_name }} wurde geöffnet"
       - conditions:
           - condition: trigger
             id: closed
@@ -65,3 +93,13 @@ action:
             data:
               title: "{{ notif_name }}"
               message: "{{ notif_name }} wurde geschlossen"
+          - if:
+              - condition: template
+                value_template: "{{ use_telegram }}"
+            then:
+              - service: notify.send_message
+                target:
+                  entity_id: "{{ telegram_target }}"
+                data:
+                  title: "{{ notif_name }}"
+                  message: "{{ notif_name }} wurde geschlossen"
