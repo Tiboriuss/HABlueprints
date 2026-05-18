@@ -1,9 +1,9 @@
 blueprint:
-  name: Türkontakt → ntfy + Telegram Benachrichtigung
+  name: Türkontakt → Benachrichtigung (ntfy + Telegram)
   description: >
-    Sendet eine ntfy-Benachrichtigung (und optional Telegram), wenn ein
-    Tür-/Fensterkontakt geöffnet oder geschlossen wird.
-    Nachricht verwendet den konfigurierten Namen.
+    Sendet eine Benachrichtigung wenn ein Tür-/Fensterkontakt geöffnet oder
+    geschlossen wird. ntfy und Telegram sind beide optional und unabhängig
+    voneinander aktivierbar.
   domain: automation
   input:
     door_sensor:
@@ -15,29 +15,36 @@ blueprint:
 
     name:
       name: Name für die Benachrichtigung
-      description: Dieser Name ersetzt %NAME% in der Nachricht.
+      description: Dieser Name wird in der Nachricht verwendet.
       default: Tür
       selector:
         text: {}
 
+    ntfy_enabled:
+      name: ntfy aktivieren
+      description: Benachrichtigung über ntfy senden.
+      default: true
+      selector:
+        boolean: {}
+
     ntfy_device:
       name: ntfy Gerät
-      description: Wähle das ntfy Gerät/Topic.
+      description: Wähle das ntfy Gerät/Topic (nur relevant wenn ntfy aktiviert).
+      default: ""
       selector:
         device:
           integration: ntfy
 
     telegram_enabled:
       name: Telegram aktivieren
-      description: Zusätzlich eine Benachrichtigung über Telegram senden.
+      description: Benachrichtigung über Telegram senden.
       default: false
       selector:
         boolean: {}
 
     telegram_entity:
       name: Telegram Notify-Entität
-      description: >
-        Wähle die Telegram-Notify-Entität aus (nur relevant wenn Telegram aktiviert).
+      description: Wähle die Telegram-Notify-Entität (nur relevant wenn Telegram aktiviert).
       default: ""
       selector:
         entity:
@@ -47,6 +54,7 @@ mode: restart
 
 variables:
   notif_name: !input name
+  use_ntfy: !input ntfy_enabled
   use_telegram: !input telegram_enabled
   telegram_target: !input telegram_entity
 
@@ -68,15 +76,19 @@ action:
           - condition: trigger
             id: opened
         sequence:
-          - service: ntfy.publish
-            target:
-              device_id: !input ntfy_device
-            data:
-              title: "{{ notif_name }}"
-              message: "{{ notif_name }} wurde geöffnet"
           - if:
               - condition: template
-                value_template: "{{ use_telegram }}"
+                value_template: "{{ use_ntfy }}"
+            then:
+              - service: ntfy.publish
+                target:
+                  device_id: !input ntfy_device
+                data:
+                  title: "{{ notif_name }}"
+                  message: "{{ notif_name }} wurde geöffnet"
+          - if:
+              - condition: template
+                value_template: "{{ use_telegram and telegram_target != '' }}"
             then:
               - service: notify.send_message
                 target:
@@ -88,15 +100,19 @@ action:
           - condition: trigger
             id: closed
         sequence:
-          - service: ntfy.publish
-            target:
-              device_id: !input ntfy_device
-            data:
-              title: "{{ notif_name }}"
-              message: "{{ notif_name }} wurde geschlossen"
           - if:
               - condition: template
-                value_template: "{{ use_telegram }}"
+                value_template: "{{ use_ntfy }}"
+            then:
+              - service: ntfy.publish
+                target:
+                  device_id: !input ntfy_device
+                data:
+                  title: "{{ notif_name }}"
+                  message: "{{ notif_name }} wurde geschlossen"
+          - if:
+              - condition: template
+                value_template: "{{ use_telegram and telegram_target != '' }}"
             then:
               - service: notify.send_message
                 target:
