@@ -38,6 +38,7 @@ blueprint:
       name: Telegram Notify-Entität
       description: >
         Wähle die Telegram-Notify-Entität aus (nur relevant wenn Telegram aktiviert).
+      default: ""
       selector:
         entity:
           domain: notify
