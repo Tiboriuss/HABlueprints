@@ -94,7 +94,6 @@ action:
                 target:
                   entity_id: "{{ telegram_target }}"
                 data:
-                  title: "{{ notif_name }}"
                   message: "{{ notif_name }} wurde geöffnet"
       - conditions:
           - condition: trigger
@@ -118,5 +117,4 @@ action:
                 target:
                   entity_id: "{{ telegram_target }}"
                 data:
-                  title: "{{ notif_name }}"
                   message: "{{ notif_name }} wurde geschlossen"
